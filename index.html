@@ -5,42 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexGen AI Video Editor</title>
     
-    <!-- 1. Tailwind CSS (Styling) -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 2. FontAwesome (Untuk Icon) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- 3. React & ReactDOM -->
+    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- 4. Babel (Agar bisa baca kode React di HTML) -->
+    <!-- Babel untuk JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
-        /* CSS Tambahan untuk Scrollbar & Animasi */
-        body { margin: 0; background-color: #020617; color: white; overflow-x: hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0514;
+            color: white;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+        
         @keyframes scanline {
             0% { transform: translateY(-100%); }
             100% { transform: translateY(100%); }
         }
         .animate-scanline { animation: scanline 3s linear infinite; }
+        
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glow-purple { box-shadow: 0 0 20px rgba(168,85,247,0.4); }
     </style>
 </head>
 <body>
-    <!-- Tempat aplikasi React akan muncul -->
     <div id="root"></div>
 
-    <!-- KODE REACT UTAMA -->
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- MOCK DATA ---
+        // Simulasi Komponen Icon sederhana menggunakan Lucide
+        const Icon = ({ name, className }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            });
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        const processingSteps = [
+            { id: 1, label: "Fetching Video Stream...", icon: "cloud" },
+            { id: 2, label: "Neural Audio Extraction", icon: "music" },
+            { id: 3, label: "Whisper AI Transcription", icon: "type" },
+            { id: 4, label: "Analyzing Viral Moments", icon: "flame" },
+            { id: 5, label: "Applying Smart Cuts & B-Roll", icon: "scissors" },
+            { id: 6, label: "Generating Dynamic Subtitles", icon: "zap" },
+        ];
+
         const aiScenes = [
             { id: 1, start: '00:00', end: '00:15', type: 'Strong Hook', emotion: 'High (Excited)', score: 98, color: 'text-purple-400 bg-purple-500/20 border-purple-500/50' },
             { id: 2, start: '00:15', end: '00:32', type: 'Story Build', emotion: 'Medium', score: 85, color: 'text-blue-400 bg-blue-500/20 border-blue-500/50' },
@@ -48,24 +80,19 @@
             { id: 4, start: '00:45', end: '00:60', type: 'CTA', emotion: 'Neutral', score: 75, color: 'text-indigo-400 bg-indigo-500/20 border-indigo-500/50' },
         ];
 
-        const processingSteps = [
-            { id: 1, label: "Fetching Video Stream...", icon: "fas fa-cloud" },
-            { id: 2, label: "Neural Audio Extraction", icon: "fas fa-music" },
-            { id: 3, label: "Whisper AI Transcription", icon: "fas fa-font" },
-            { id: 4, label: "Analyzing Viral Moments", icon: "fas fa-fire" },
-            { id: 5, label: "Applying Smart Cuts & B-Roll", icon: "fas fa-cut" },
-            { id: 6, label: "Generating Dynamic Subtitles", icon: "fas fa-bolt" },
-        ];
-
         function App() {
-            const [view, setView] = useState('landing');
+            const [view, setView] = useState('landing'); // landing, processing, editor, projects, pricing
             const [urlInput, setUrlInput] = useState('');
             const [processingState, setProcessingState] = useState(0);
             const [activeTab, setActiveTab] = useState('ai_analysis');
             const [isPlaying, setIsPlaying] = useState(false);
             const [currentTime, setCurrentTime] = useState(0);
+            
+            // Export State
+            const [isExporting, setIsExporting] = useState(false);
+            const [exportProgress, setExportProgress] = useState(0);
+            const [exportStatus, setExportStatus] = useState('');
 
-            // Simulasi Timeline
             useEffect(() => {
                 let interval;
                 if (isPlaying) {
@@ -75,6 +102,10 @@
                 }
                 return () => clearInterval(interval);
             }, [isPlaying]);
+
+            useEffect(() => {
+                lucide.createIcons();
+            });
 
             const handleStartProcessing = (e) => {
                 e.preventDefault();
@@ -93,295 +124,511 @@
                 }, 1500);
             };
 
-            // --- LAYAR 1: LANDING PAGE ---
-            if (view === 'landing') {
-                return (
-                    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-[#0a0514] to-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden text-white">
-                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
-                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+            const handleExport = () => {
+                setIsExporting(true);
+                setExportProgress(0);
+                setExportStatus('AI Optimizing Pacing...');
+                
+                setTimeout(() => setExportStatus('Applying Dynamic Transitions...'), 2000);
+                setTimeout(() => setExportStatus('Rendering 4K MP4...'), 4000);
+                setTimeout(() => setExportStatus('Uploading to Cloud...'), 7000);
 
-                        <div className="z-10 max-w-4xl w-full text-center space-y-8">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-4 backdrop-blur-md">
-                                <i className="fas fa-bolt text-purple-400"></i>
-                                <span className="text-sm text-slate-300 tracking-wider">NEXGEN AI CORE v4.0 ONLINE</span>
+                let progress = 0;
+                const exportInt = setInterval(() => {
+                    progress += 1;
+                    setExportProgress(progress);
+                    if(progress >= 100) {
+                        clearInterval(exportInt);
+                        setExportStatus('Export Complete!');
+                        setTimeout(() => {
+                            setIsExporting(false);
+                            setView('projects');
+                        }, 2000);
+                    }
+                }, 80);
+            };
+
+            const LandingPage = () => (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-[#0a0514] to-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden text-white">
+                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+
+                    <div className="z-10 max-w-4xl w-full text-center space-y-8">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-4 backdrop-blur-md">
+                            <Icon name="zap" className="w-4 h-4 text-purple-400" />
+                            <span className="text-sm text-slate-300 tracking-wider font-semibold">NEXGEN AI CORE v4.0 ONLINE</span>
+                        </div>
+                        
+                        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-200 to-blue-200 leading-tight">
+                            Turn Long Videos Into <br/> 
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500">Viral Shorts Automatically.</span>
+                        </h1>
+                        
+                        <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">
+                            Upload or paste a link. Our proprietary 2026 AI analyzes hooks, cuts silence, adds dynamic B-roll, and renders MrBeast-style captions in seconds.
+                        </p>
+
+                        <form onSubmit={handleStartProcessing} className="max-w-2xl mx-auto mt-12 relative group">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
+                            <div className="relative flex items-center glass-panel rounded-2xl p-2">
+                                <Icon name="link" className="w-6 h-6 text-slate-400 ml-4" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Paste YouTube, TikTok, or Drive link here..."
+                                    className="flex-1 bg-transparent border-none text-white px-4 py-4 focus:outline-none placeholder-slate-500 w-full"
+                                    value={urlInput}
+                                    onChange={(e) => setUrlInput(e.target.value)}
+                                    required
+                                />
+                                <button type="submit" className="px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center gap-2 glow-purple shrink-0">
+                                    Generate <Icon name="wand-2" className="w-5 h-5" />
+                                </button>
                             </div>
-                            
-                            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-purple-200 to-blue-200">
-                                Turn Long Videos Into <br/> 
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500">Viral Shorts Automatically.</span>
-                            </h1>
-                            
-                            <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto">
-                                Upload or paste a link. Our proprietary 2026 AI analyzes hooks, cuts silence, adds dynamic B-roll, and renders MrBeast-style captions in seconds.
-                            </p>
+                        </form>
 
-                            <form onSubmit={handleStartProcessing} className="max-w-2xl mx-auto mt-12 relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-1000 group-hover:duration-200"></div>
-                                <div className="relative flex items-center bg-slate-900 border border-white/10 rounded-2xl p-2 bg-slate-900/60 backdrop-blur-xl">
-                                    <i className="fas fa-link text-slate-400 ml-4 text-xl"></i>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Paste YouTube, TikTok, or Drive link here..."
-                                        className="flex-1 bg-transparent border-none text-white px-4 py-4 focus:outline-none placeholder-slate-500"
-                                        value={urlInput}
-                                        onChange={(e) => setUrlInput(e.target.value)}
-                                        required
-                                    />
-                                    <button type="submit" className="px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-slate-200 transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-                                        Generate <i className="fas fa-magic"></i>
-                                    </button>
-                                </div>
-                            </form>
-
-                            <div className="flex justify-center gap-8 mt-12 text-slate-500">
-                                <div className="flex items-center gap-2"><i className="fas fa-upload"></i> Manual Upload</div>
-                                <div className="flex items-center gap-2"><i className="fas fa-cloud"></i> Google Drive</div>
-                                <div className="flex items-center gap-2"><i className="fas fa-server"></i> Local Rendering</div>
-                            </div>
+                        <div className="flex flex-wrap justify-center gap-8 mt-12 text-slate-500 text-sm font-medium">
+                            <div className="flex items-center gap-2 hover:text-white cursor-pointer transition"><Icon name="upload" className="w-5 h-5"/> Manual Upload</div>
+                            <div className="flex items-center gap-2 hover:text-white cursor-pointer transition"><Icon name="cloud" className="w-5 h-5"/> Google Drive</div>
+                            <div className="flex items-center gap-2 hover:text-white cursor-pointer transition"><Icon name="server" className="w-5 h-5"/> Local Rendering</div>
                         </div>
                     </div>
-                );
-            }
+                </div>
+            );
 
-            // --- LAYAR 2: LOADING PROCESSING ---
-            if (view === 'processing') {
-                return (
-                    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-[#0a0514] to-slate-950 flex flex-col items-center justify-center p-6 text-white">
-                        <div className="max-w-md w-full p-8 rounded-3xl bg-slate-900/60 backdrop-blur-xl border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.4)] relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/10 to-transparent w-full h-full animate-scanline pointer-events-none"></div>
+            const ProcessingScreen = () => (
+                <div className="min-h-screen bg-gradient-to-br from-slate-950 via-[#0a0514] to-slate-950 flex flex-col items-center justify-center p-6 text-white">
+                    <div className="max-w-md w-full p-8 rounded-3xl glass-panel glow-purple relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/10 to-transparent w-full h-full animate-scanline pointer-events-none"></div>
 
-                            <div className="text-center mb-8">
-                                <div className="inline-block p-4 bg-purple-500/10 rounded-full mb-4">
-                                    <i className="fas fa-microchip text-4xl text-purple-400 animate-pulse"></i>
-                                </div>
-                                <h2 className="text-2xl font-bold">Neural Engine Processing</h2>
-                                <p className="text-slate-400 text-sm mt-2">Allocating cloud GPUs for video analysis...</p>
+                        <div className="text-center mb-8">
+                            <div className="inline-block p-4 bg-purple-500/10 rounded-full mb-4">
+                                <Icon name="cpu" className="w-10 h-10 text-purple-400 animate-pulse" />
                             </div>
+                            <h2 className="text-2xl font-bold">Neural Engine Processing</h2>
+                            <p className="text-slate-400 text-sm mt-2">Allocating cloud GPUs for video analysis...</p>
+                        </div>
 
-                            <div className="space-y-4">
-                                {processingSteps.map((step, index) => {
-                                    const isActive = index === processingState;
-                                    const isDone = index < processingState;
-                                    
-                                    return (
-                                        <div key={step.id} className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-300 ${isActive ? 'bg-white/10 border border-white/20' : 'opacity-50'}`}>
-                                            <div className={`p-2 rounded-lg ${isDone ? 'bg-green-500/20 text-green-400' : isActive ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-800 text-slate-500'}`}>
-                                                {isDone ? <i className="fas fa-check-circle"></i> : isActive ? <i className="fas fa-spinner fa-spin"></i> : <i className={step.icon}></i>}
-                                            </div>
-                                            <span className={`flex-1 text-sm ${isActive ? 'text-white font-medium' : 'text-slate-400'}`}>
-                                                {step.label}
-                                            </span>
-                                            {isActive && <span className="text-xs text-purple-400 animate-pulse">Running</span>}
+                        <div className="space-y-4">
+                            {processingSteps.map((step, index) => {
+                                const isActive = index === processingState;
+                                const isDone = index < processingState;
+
+                                return (
+                                    <div key={step.id} className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-300 ${isActive ? 'bg-white/10 border border-white/20' : 'opacity-50'}`}>
+                                        <div className={`p-2 rounded-lg flex items-center justify-center w-9 h-9 ${isDone ? 'bg-green-500/20 text-green-400' : isActive ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-800 text-slate-500'}`}>
+                                            {isDone ? <Icon name="check-circle-2" className="w-5 h-5" /> : isActive ? <Icon name="loader-2" className="w-5 h-5 animate-spin" /> : <Icon name={step.icon} className="w-5 h-5" />}
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <span className={`flex-1 text-sm ${isActive ? 'text-white font-medium' : 'text-slate-400'}`}>
+                                            {step.label}
+                                        </span>
+                                        {isActive && <span className="text-xs text-purple-400 animate-pulse">Running</span>}
+                                    </div>
+                                );
+                            })}
+                        </div>
 
-                            <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center text-xs text-slate-500">
-                                <span className="flex items-center gap-1"><i className="fas fa-hdd"></i> RAM: 32GB Allocated</span>
-                                <span className="flex items-center gap-1"><i className="fas fa-bolt text-yellow-500"></i> Est. 12s remaining</span>
-                            </div>
+                        <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center text-xs text-slate-500 font-mono">
+                            <span className="flex items-center gap-1"><Icon name="hard-drive" className="w-3 h-3"/> RAM: 32GB</span>
+                            <span className="flex items-center gap-1"><Icon name="zap" className="w-3 h-3 text-yellow-500"/> Est. 12s remaining</span>
                         </div>
                     </div>
-                );
-            }
+                </div>
+            );
 
-            // --- LAYAR 3: DASHBOARD EDITOR ---
-            return (
-                <div className="h-screen flex flex-col bg-gradient-to-br from-slate-950 via-[#0a0514] to-slate-950 text-white overflow-hidden">
-                    {/* Header */}
-                    <header className="h-16 bg-slate-900/60 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6 z-20">
-                        <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
-                                <i className="fas fa-columns text-purple-500"></i> NexGen
+            // --- SIDEBAR COMPONENT ---
+            const Sidebar = () => (
+                <div className="w-20 border-r border-white/10 glass-panel flex flex-col items-center py-6 gap-8 z-10 hidden md:flex shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/30 mb-4 cursor-pointer" onClick={() => setView('landing')}>
+                        <Icon name="layout" className="w-6 h-6 text-white" />
+                    </div>
+                    
+                    <div className="flex flex-col gap-4 w-full px-3">
+                        <button onClick={() => setView('editor')} className={`p-3 rounded-xl transition flex justify-center ${view === 'editor' ? 'bg-purple-500/20 text-purple-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Editor">
+                            <Icon name="scissors" className="w-6 h-6"/>
+                        </button>
+                        <button onClick={() => setView('projects')} className={`p-3 rounded-xl transition flex justify-center ${view === 'projects' ? 'bg-purple-500/20 text-purple-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Projects & Storage">
+                            <Icon name="folder-open" className="w-6 h-6"/>
+                        </button>
+                        <button onClick={() => setView('pricing')} className={`p-3 rounded-xl transition flex justify-center ${view === 'pricing' ? 'bg-purple-500/20 text-purple-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`} title="Pricing & Billing">
+                            <Icon name="credit-card" className="w-6 h-6"/>
+                        </button>
+                    </div>
+
+                    <div className="mt-auto flex flex-col gap-4 w-full px-3">
+                        <button className="p-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition flex justify-center" title="Settings">
+                            <Icon name="settings" className="w-6 h-6"/>
+                        </button>
+                        <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/10 mx-auto overflow-hidden">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" className="w-full h-full object-cover" />
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // --- PROJECTS & CLOUD STORAGE PAGE ---
+            const ProjectsPage = () => (
+                <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-[#0a0514] to-slate-950 p-8 overflow-y-auto custom-scrollbar">
+                    <div className="flex justify-between items-end mb-8">
+                        <div>
+                            <h2 className="text-3xl font-bold text-white mb-2">Cloud Storage & History</h2>
+                            <p className="text-slate-400">Manage your generated viral clips and projects.</p>
+                        </div>
+                        <button onClick={() => setView('landing')} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-white font-medium flex items-center gap-2 transition">
+                            <Icon name="plus" className="w-4 h-4"/> New Project
+                        </button>
+                    </div>
+
+                    {/* Storage Info Widget */}
+                    <div className="glass-panel rounded-2xl p-6 mb-8 border border-white/10 flex flex-col md:flex-row gap-6 items-center">
+                        <div className="p-4 bg-blue-500/10 rounded-full">
+                            <Icon name="hard-drive" className="w-8 h-8 text-blue-400" />
+                        </div>
+                        <div className="flex-1 w-full">
+                            <div className="flex justify-between text-sm mb-2 font-medium">
+                                <span className="text-white">Storage Used</span>
+                                <span className="text-blue-400">12.5 GB / 100 GB</span>
                             </div>
-                            <div className="h-6 w-px bg-white/10 mx-2"></div>
-                            <span className="text-sm font-medium">Project_Viral_001.mp4</span>
-                            <span className="px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs flex items-center gap-1">
-                                <i className="fas fa-cloud"></i> Saved
+                            <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 w-[12.5%] rounded-full"></div>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-medium border border-white/5 transition flex items-center gap-2">
+                                <Icon name="trash-2" className="w-4 h-4 text-slate-400"/> Cleanup
+                            </button>
+                            <button className="px-4 py-2 bg-[#1da1f2]/10 text-[#1da1f2] hover:bg-[#1da1f2]/20 rounded-lg text-sm font-medium border border-[#1da1f2]/30 transition flex items-center gap-2">
+                                <Icon name="cloud" className="w-4 h-4"/> Google Drive Sync
+                            </button>
+                        </div>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-white mb-4">Recent Projects</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {[1,2,3,4,5].map((item) => (
+                            <div key={item} className="glass-panel rounded-xl overflow-hidden border border-white/5 hover:border-purple-500/50 transition cursor-pointer group">
+                                <div className="aspect-[9/16] bg-slate-900 relative overflow-hidden flex justify-center items-center">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent z-10"></div>
+                                    <Icon name="video" className="w-12 h-12 text-slate-700 opacity-50 group-hover:scale-110 transition duration-500" />
+                                    <div className="absolute bottom-3 left-3 z-20">
+                                        <span className="px-2 py-1 bg-black/60 backdrop-blur rounded text-xs font-mono text-white">00:45</span>
+                                    </div>
+                                    <div className="absolute top-3 right-3 z-20">
+                                        <span className="px-2 py-1 bg-green-500/20 border border-green-500/50 rounded text-[10px] font-bold text-green-400 uppercase tracking-wider">92% Viral</span>
+                                    </div>
+                                </div>
+                                <div className="p-4">
+                                    <h4 className="font-semibold text-sm text-white truncate">Podcast_Clip_Part_{item}.mp4</h4>
+                                    <p className="text-xs text-slate-500 mt-1">Edited 2 hours ago</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            // --- PRICING PAGE ---
+            const PricingPage = () => (
+                <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-950 via-[#0a0514] to-slate-950 p-8 overflow-y-auto custom-scrollbar items-center">
+                    <div className="text-center max-w-2xl mb-12 mt-8">
+                        <h2 className="text-4xl font-black text-white mb-4">Upgrade Your Workflow</h2>
+                        <p className="text-slate-400 text-lg">Unleash the full power of NexGen AI. Faster rendering, custom fonts, and multi-language viral translations.</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8 max-w-5xl w-full">
+                        {/* Basic */}
+                        <div className="glass-panel rounded-3xl p-8 border border-white/10 flex flex-col">
+                            <h3 className="text-xl font-bold text-white mb-2">Creator</h3>
+                            <div className="text-4xl font-black text-white mb-6">$19<span className="text-lg text-slate-500 font-medium">/mo</span></div>
+                            <ul className="space-y-4 mb-8 flex-1 text-sm text-slate-300">
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-green-400"/> 50 AI Generation/mo</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-green-400"/> 1080p Export</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-green-400"/> 50GB Cloud Storage</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-green-400"/> Standard Auto Captions</li>
+                            </ul>
+                            <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition">Choose Plan</button>
+                        </div>
+
+                        {/* Pro */}
+                        <div className="glass-panel rounded-3xl p-8 border border-purple-500 relative transform md:-translate-y-4 glow-purple flex flex-col">
+                            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full text-xs font-bold text-white uppercase tracking-wide">Most Popular</div>
+                            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2"><Icon name="zap" className="w-5 h-5 text-yellow-400"/> Professional</h3>
+                            <div className="text-4xl font-black text-white mb-6">$49<span className="text-lg text-slate-500 font-medium">/mo</span></div>
+                            <ul className="space-y-4 mb-8 flex-1 text-sm text-slate-300">
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-purple-400"/> Unlimited Generation</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-purple-400"/> 4K MP4 Export</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-purple-400"/> 200GB Cloud Storage</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-purple-400"/> AI Auto B-Roll & Pacing</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-purple-400"/> Custom Font Upload</li>
+                            </ul>
+                            <button className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 text-white font-bold transition shadow-lg">Upgrade to Pro</button>
+                        </div>
+
+                        {/* Enterprise */}
+                        <div className="glass-panel rounded-3xl p-8 border border-white/10 flex flex-col">
+                            <h3 className="text-xl font-bold text-white mb-2">Agency</h3>
+                            <div className="text-4xl font-black text-white mb-6">$129<span className="text-lg text-slate-500 font-medium">/mo</span></div>
+                            <ul className="space-y-4 mb-8 flex-1 text-sm text-slate-300">
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-green-400"/> 5 Team Members</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-green-400"/> 1TB Cloud Storage</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-green-400"/> Dedicated Fast GPU Rendering</li>
+                                <li className="flex items-center gap-3"><Icon name="check" className="w-5 h-5 text-green-400"/> API Access</li>
+                            </ul>
+                            <button className="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition">Contact Sales</button>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // --- EDITOR DASHBOARD ---
+            const EditorDashboard = () => (
+                <div className="flex-1 flex flex-col overflow-hidden relative">
+                    
+                    {/* EXPORT OVERLAY MODAL */}
+                    {isExporting && (
+                        <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center">
+                            <div className="glass-panel rounded-3xl p-10 max-w-md w-full text-center border border-purple-500/50 glow-purple">
+                                <div className="mb-6 relative w-20 h-20 mx-auto flex items-center justify-center">
+                                    <svg className="animate-spin w-full h-full text-purple-500/20" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <Icon name="video" className="w-8 h-8 text-purple-400 absolute" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-2">Rendering Engine</h3>
+                                <p className="text-sm text-slate-400 mb-8 font-mono">{exportStatus}</p>
+                                
+                                <div className="w-full h-4 bg-slate-800 rounded-full overflow-hidden relative mb-4">
+                                    <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300" style={{ width: `${exportProgress}%` }}></div>
+                                </div>
+                                <div className="flex justify-between text-xs font-medium">
+                                    <span className="text-slate-400">{exportProgress}% Complete</span>
+                                    <span className="text-slate-400">Est: 00:45</span>
+                                </div>
+                                
+                                <button onClick={() => setIsExporting(false)} className="mt-8 px-6 py-2 border border-white/10 hover:bg-white/5 rounded-lg text-sm text-slate-300 transition">Cancel</button>
+                            </div>
+                        </div>
+                    )}
+
+                    <header className="h-16 glass-panel border-b border-white/10 flex items-center justify-between px-6 z-20 shrink-0">
+                        <div className="flex items-center gap-4">
+                            <span className="text-sm font-medium text-white">Project_Viral_001.mp4</span>
+                            <span className="px-2 py-1 rounded bg-green-500/10 text-green-400 text-xs flex items-center gap-1 font-medium">
+                                <Icon name="cloud-snow" className="w-3 h-3"/> Auto-Saved
                             </span>
                         </div>
+                        
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded-full border border-white/5">
-                                <i className="fas fa-chart-line text-blue-400"></i> CPU: 12%
+                            <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded-full border border-white/5 font-mono">
+                                <Icon name="activity" className="w-3 h-3 text-blue-400" /> CPU: 12%
                             </div>
-                            <button className="p-2 text-slate-400 hover:text-white transition-colors"><i className="fas fa-cog text-lg"></i></button>
-                            <button className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-medium text-sm flex items-center gap-2 hover:opacity-90 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-                                <i className="fas fa-download"></i> Export
+                            <button onClick={handleExport} className="px-5 py-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg font-bold text-sm text-white flex items-center gap-2 hover:opacity-90 transition-opacity glow-purple">
+                                <Icon name="download" className="w-4 h-4"/> Export MP4
                             </button>
                         </div>
                     </header>
 
-                    {/* Workspace */}
                     <div className="flex-1 flex overflow-hidden">
-                        {/* Toolbar Kiri */}
-                        <div className="w-16 border-r border-white/10 bg-slate-900/60 backdrop-blur-xl flex flex-col items-center py-6 gap-6 z-10">
-                            <button className="p-3 bg-purple-500/20 text-purple-400 rounded-xl hover:bg-purple-500/40 transition"><i className="fas fa-magic text-xl"></i></button>
-                            <button className="p-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition"><i className="fas fa-video text-xl"></i></button>
-                            <button className="p-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition"><i className="fas fa-font text-xl"></i></button>
-                            <button className="p-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl transition"><i className="fas fa-layer-group text-xl"></i></button>
-                        </div>
+                        {/* Video Area */}
+                        <div className="flex-1 flex flex-col p-4">
+                            <div className="flex-1 rounded-2xl bg-black border border-white/10 relative flex items-center justify-center overflow-hidden shadow-2xl">
+                                <div className="absolute inset-0 bg-gradient-to-b from-slate-900 to-black"></div>
+                                
+                                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none z-10 px-12">
+                                    <h2 className="text-4xl md:text-5xl font-black uppercase text-white tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px black' }}>
+                                        <span className="text-yellow-400">THIS</span> IS THE FUTURE <br/>OF <span className="text-purple-400 bg-white/10 px-2 rounded backdrop-blur-sm shadow-lg">VIDEO EDITING</span>
+                                    </h2>
+                                </div>
 
-                        {/* Center: Video Preview */}
-                        <div className="flex-1 flex flex-col lg:flex-row h-full">
-                            <div className="flex-1 flex flex-col p-4">
-                                <div className="flex-1 rounded-2xl bg-black border border-white/10 relative flex items-center justify-center overflow-hidden shadow-2xl">
-                                    <div className="absolute inset-0 bg-gradient-to-b from-slate-900 to-black"></div>
-                                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none z-10 px-12">
-                                        <h2 className="text-4xl md:text-5xl font-black uppercase text-white tracking-tight drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px black' }}>
-                                            <span className="text-yellow-400">THIS</span> IS THE FUTURE <br/>OF <span className="text-purple-400 bg-white/10 px-2 rounded backdrop-blur-sm">VIDEO EDITING</span>
-                                        </h2>
+                                <div className="absolute top-4 left-4 bg-blue-500/20 text-blue-400 px-3 py-1 rounded border border-blue-500/50 text-xs font-bold flex items-center gap-2 backdrop-blur-sm">
+                                    <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div> AI B-Roll Applied
+                                </div>
+
+                                <div className="absolute inset-8 border border-dashed border-white/20 pointer-events-none rounded-lg"></div>
+                                
+                                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 glass-panel px-6 py-3 rounded-full border border-white/10 w-3/4 max-w-lg">
+                                    <button onClick={() => setIsPlaying(!isPlaying)} className="hover:text-purple-400 transition text-white">
+                                        <Icon name={isPlaying ? "pause" : "play"} className="w-6 h-6"/>
+                                    </button>
+                                    <div className="flex-1 h-1.5 bg-slate-700 rounded-full relative cursor-pointer">
+                                        <div className="absolute top-0 left-0 h-full bg-purple-500 rounded-full transition-all duration-100 shadow-[0_0_10px_#a855f7]" style={{ width: `${(currentTime/60)*100}%` }}></div>
                                     </div>
-                                    <div className="absolute top-4 left-4 bg-blue-500/20 text-blue-400 px-3 py-1 rounded border border-blue-500/50 text-xs flex items-center gap-1">
-                                        <i className="fas fa-video"></i> AI B-Roll Applied
-                                    </div>
-                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-slate-900/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
-                                        <button onClick={() => setIsPlaying(!isPlaying)} className="hover:text-purple-400 transition text-lg w-6">
-                                            {isPlaying ? <i className="fas fa-pause"></i> : <i className="fas fa-play"></i>}
-                                        </button>
-                                        <div className="w-48 h-1 bg-slate-700 rounded-full relative">
-                                            <div className="absolute top-0 left-0 h-full bg-purple-500 rounded-full transition-all" style={{ width: `${(currentTime/60)*100}%` }}></div>
-                                        </div>
-                                        <span className="text-xs font-mono">00:{(currentTime/10).toFixed(1).replace('.','')} / 00:60</span>
-                                    </div>
+                                    <span className="text-xs font-mono text-slate-300">00:{(currentTime/10).toFixed(1).replace('.','')} / 00:60</span>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Panel Kanan */}
-                            <div className="w-full lg:w-[400px] border-l border-white/10 bg-slate-900/60 backdrop-blur-xl flex flex-col z-10">
-                                <div className="flex border-b border-white/10">
-                                    <button onClick={() => setActiveTab('ai_analysis')} className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'ai_analysis' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400'}`}>AI Analysis</button>
-                                    <button onClick={() => setActiveTab('subtitles')} className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'subtitles' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400'}`}>Subtitles</button>
-                                    <button onClick={() => setActiveTab('duration')} className={`flex-1 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'duration' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400'}`}>Format</button>
-                                </div>
+                        {/* Right Panel */}
+                        <div className="w-full lg:w-[380px] border-l border-white/10 glass-panel flex flex-col z-10 shrink-0">
+                            <div className="flex border-b border-white/10">
+                                <button onClick={() => setActiveTab('ai_analysis')} className={`flex-1 py-4 text-xs uppercase tracking-wider font-bold border-b-2 transition-colors ${activeTab === 'ai_analysis' ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'}`}>Analysis</button>
+                                <button onClick={() => setActiveTab('subtitles')} className={`flex-1 py-4 text-xs uppercase tracking-wider font-bold border-b-2 transition-colors ${activeTab === 'subtitles' ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'}`}>Captions</button>
+                                <button onClick={() => setActiveTab('duration')} className={`flex-1 py-4 text-xs uppercase tracking-wider font-bold border-b-2 transition-colors ${activeTab === 'duration' ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-slate-400 hover:text-white hover:bg-white/5'}`}>Format</button>
+                            </div>
 
-                                <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
-                                    {/* TABS CONTENT */}
-                                    {activeTab === 'ai_analysis' && (
-                                        <>
-                                            <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-900/40 to-slate-900 border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <h3 className="font-bold flex items-center gap-2"><i className="fas fa-fire text-orange-500"></i> Viral Potential</h3>
-                                                    <span className="text-2xl font-black text-white">96<span className="text-sm text-slate-400">%</span></span>
+                            <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar text-white">
+                                {activeTab === 'ai_analysis' && (
+                                    <>
+                                        <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-900/40 to-slate-900 border border-purple-500/30 glow-purple">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="font-bold flex items-center gap-2"><Icon name="flame" className="w-5 h-5 text-orange-500"/> Viral Potential</h3>
+                                                <span className="text-3xl font-black text-white">96<span className="text-base text-slate-400 font-medium">%</span></span>
+                                            </div>
+                                            <div className="space-y-3 text-xs font-medium text-slate-300">
+                                                <div className="flex justify-between items-center">
+                                                    <span>Hook Strength</span>
+                                                    <div className="w-32 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-green-500 w-[98%] shadow-[0_0_8px_#22c55e]"></div></div>
                                                 </div>
-                                                <div className="space-y-2 text-sm text-slate-300">
-                                                    <div className="flex justify-between items-center"><span>Hook Strength</span><div className="w-24 h-2 bg-slate-800 rounded-full"><div className="h-full bg-green-500 w-[98%] rounded-full"></div></div></div>
-                                                    <div className="flex justify-between items-center"><span>Retention Prediction</span><div className="w-24 h-2 bg-slate-800 rounded-full"><div className="h-full bg-blue-500 w-[85%] rounded-full"></div></div></div>
-                                                    <div className="flex justify-between items-center"><span>Pacing Rating</span><div className="w-24 h-2 bg-slate-800 rounded-full"><div className="h-full bg-purple-500 w-[92%] rounded-full"></div></div></div>
+                                                <div className="flex justify-between items-center">
+                                                    <span>Retention Prediction</span>
+                                                    <div className="w-32 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-blue-500 w-[85%] shadow-[0_0_8px_#3b82f6]"></div></div>
                                                 </div>
                                             </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Smart Scene Breakdown</h3>
-                                                <div className="space-y-3">
-                                                    {aiScenes.map((scene) => (
-                                                        <div key={scene.id} className="p-3 rounded-xl bg-slate-800/50 border border-white/5 cursor-pointer flex flex-col gap-2">
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="text-xs font-mono text-slate-400">{scene.start} - {scene.end}</span>
-                                                                <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full font-bold border ${scene.color}`}>{scene.type}</span>
-                                                            </div>
-                                                            <div className="flex justify-between text-sm">
-                                                                <span>Emotion: <span className="text-white">{scene.emotion}</span></span>
-                                                                <span className="text-green-400">Score: {scene.score}</span>
-                                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Smart Scene Breakdown</h3>
+                                            <div className="space-y-3">
+                                                {aiScenes.map((scene) => (
+                                                    <div key={scene.id} className="p-3 rounded-xl bg-slate-800/40 border border-white/5 hover:border-white/20 cursor-pointer transition flex flex-col gap-2">
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="text-xs font-mono text-slate-400">{scene.start} - {scene.end}</span>
+                                                            <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold border ${scene.color}`}>{scene.type}</span>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {activeTab === 'subtitles' && (
-                                        <>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider">Auto Styling Preset</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    {['MrBeast', 'Hormozi', 'Neon Glow', 'Cinematic', 'Gaming', 'Minimal'].map((style, i) => (
-                                                        <button key={style} className={`p-3 text-sm rounded-xl border ${i === 0 ? 'bg-purple-600/20 border-purple-500 text-white' : 'bg-slate-800/50 border-white/5 text-slate-400'}`}>{style}</button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="space-y-4 pt-4 border-t border-white/10">
-                                                <div className="flex justify-between items-center"><span className="text-sm">Auto Emoji Insert</span><div className="w-10 h-5 bg-purple-600 rounded-full relative"><div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div></div></div>
-                                                <div className="flex justify-between items-center"><span className="text-sm">Highlight Keywords</span><div className="w-10 h-5 bg-purple-600 rounded-full relative"><div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div></div></div>
-                                                <div className="flex justify-between items-center"><span className="text-sm">Dynamic Animations</span><div className="w-10 h-5 bg-purple-600 rounded-full relative"><div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div></div></div>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {activeTab === 'duration' && (
-                                        <>
-                                            <div className="p-4 rounded-xl bg-blue-900/20 border border-blue-500/30 flex items-start gap-3">
-                                                <i className="fas fa-bolt text-blue-400 mt-1"></i>
-                                                <div>
-                                                    <h4 className="font-semibold text-blue-100 text-sm">AI Smart Duration</h4>
-                                                    <p className="text-xs text-blue-300/70 mt-1">AI analyzes narrative arc to suggest the highest retention length.</p>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-semibold text-slate-400 mb-3 uppercase tracking-wider mt-6">Select Duration</h3>
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-center p-3 bg-purple-900/20 border border-purple-500/50 rounded-xl cursor-pointer">
-                                                        <span className="font-medium text-white">45 Seconds</span>
-                                                        <span className="text-xs text-purple-400 font-bold bg-purple-500/20 px-2 py-1 rounded">Recommended: 92% Viral</span>
+                                                        <div className="flex justify-between text-xs text-slate-300">
+                                                            <span>Emotion: <span className="text-white font-medium">{scene.emotion}</span></span>
+                                                            <span className="text-green-400 font-medium">Score: {scene.score}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex justify-between items-center p-3 bg-slate-800/50 border border-white/5 rounded-xl cursor-pointer">
-                                                        <span className="font-medium text-slate-300">60 Seconds</span>
-                                                        <span className="text-xs text-slate-500">Best Retention</span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {activeTab === 'subtitles' && (
+                                    <>
+                                        <div>
+                                            <h3 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider">Auto Styling Preset</h3>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                {['MrBeast', 'Hormozi', 'Neon Glow', 'Cinematic', 'Gaming', 'Minimal'].map((style, i) => (
+                                                    <button key={style} className={`p-3 text-sm font-medium rounded-xl border ${i === 0 ? 'bg-purple-600/20 border-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.2)]' : 'bg-slate-800/50 border-white/5 text-slate-400 hover:bg-white/10'} transition`}>
+                                                        {style}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-4 pt-4 border-t border-white/10">
+                                            {['Auto Emoji Insert', 'Highlight Keywords', 'Dynamic Animations', 'B-Roll Auto Insert'].map((setting, i) => (
+                                                <div key={setting} className="flex justify-between items-center">
+                                                    <span className="text-sm font-medium text-slate-200">{setting}</span>
+                                                    <div className={`w-10 h-5 rounded-full relative cursor-pointer transition-colors ${i === 3 ? 'bg-slate-700' : 'bg-purple-600'}`}>
+                                                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${i === 3 ? 'left-0.5' : 'translate-x-5'}`}></div>
                                                     </div>
                                                 </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                {activeTab === 'duration' && (
+                                    <>
+                                        <div className="p-4 rounded-xl bg-blue-900/20 border border-blue-500/30 flex items-start gap-3">
+                                            <Icon name="zap" className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                            <div>
+                                                <h4 className="font-semibold text-blue-100 text-sm">AI Smart Duration</h4>
+                                                <p className="text-xs text-blue-300/70 mt-1 leading-relaxed">AI analyzes narrative arc to suggest the highest retention length for TikTok & Reels.</p>
                                             </div>
-                                        </>
-                                    )}
-                                </div>
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xs font-bold text-slate-400 mb-3 mt-6 uppercase tracking-wider">Select Duration</h3>
+                                            <div className="space-y-2 text-sm">
+                                                <div className="flex justify-between items-center p-3 bg-purple-900/20 border border-purple-500/50 rounded-xl cursor-pointer">
+                                                    <span className="font-semibold text-white">45 Seconds</span>
+                                                    <span className="text-[10px] text-purple-400 font-bold bg-purple-500/20 border border-purple-500/30 px-2 py-1 rounded">REC: 92% Viral</span>
+                                                </div>
+                                                <div className="flex justify-between items-center p-3 bg-slate-800/50 border border-white/5 rounded-xl cursor-pointer hover:bg-slate-800 transition">
+                                                    <span className="font-medium text-slate-300">60 Seconds</span>
+                                                    <span className="text-xs text-slate-500">Best Retention</span>
+                                                </div>
+                                                <div className="flex justify-between items-center p-3 bg-slate-800/50 border border-white/5 rounded-xl cursor-pointer hover:bg-slate-800 transition">
+                                                    <span className="font-medium text-slate-300">Custom...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    {/* Timeline */}
-                    <div className="h-[300px] border-t border-white/10 bg-slate-900/60 backdrop-blur-xl flex flex-col z-20">
-                        <div className="h-10 border-b border-white/5 flex items-center px-4 gap-4 text-slate-400 text-sm">
-                            <button className="hover:text-white"><i className="fas fa-cut"></i></button>
+                    {/* Timeline Area Bottom */}
+                    <div className="h-[260px] border-t border-white/10 glass-panel flex flex-col z-20 shrink-0">
+                        <div className="h-10 border-b border-white/5 flex items-center px-4 gap-4 text-slate-400 text-xs font-medium">
+                            <button className="hover:text-white p-1 bg-white/5 rounded"><Icon name="scissors" className="w-4 h-4"/></button>
                             <div className="w-px h-4 bg-white/10"></div>
-                            <button className="hover:text-white">Auto Cut Silence</button>
-                            <button className="hover:text-white">AI Reframing</button>
+                            <button className="hover:text-white flex items-center gap-1"><Icon name="wand-2" className="w-3 h-3"/> Auto Cut Silence</button>
+                            <button className="hover:text-white flex items-center gap-1"><Icon name="crop" className="w-3 h-3"/> AI Reframing</button>
+                            <div className="flex-1"></div>
+                            <span className="font-mono bg-slate-900 px-2 py-1 rounded border border-white/5 text-slate-500">Zoom: 100%</span>
                         </div>
+
                         <div className="flex-1 overflow-x-auto overflow-y-hidden relative p-4 custom-scrollbar">
-                            <div className="relative mt-2 space-y-2 min-w-[800px]">
-                                {/* Playhead */}
-                                <div className="absolute top-0 bottom-0 w-px bg-red-500 z-50 pointer-events-none" style={{ left: `${(currentTime/60)*100}%` }}>
-                                    <div className="absolute -top-3 -left-1.5 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-transparent border-t-red-500"></div>
+                            <div className="h-6 w-full border-b border-white/10 flex items-end pb-1 relative min-w-[800px]">
+                                {[...Array(10)].map((_, i) => (
+                                    <div key={i} className="absolute text-[10px] text-slate-500 font-mono" style={{ left: `${i * 10}%` }}>
+                                        00:{i * 6 < 10 ? `0${i*6}` : i*6}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="relative mt-2 space-y-1.5 min-w-[800px]">
+                                <div className="absolute top-0 bottom-0 w-[1px] bg-red-500 z-50 pointer-events-none" style={{ left: `${(currentTime/60)*100}%` }}>
+                                    <div className="absolute -top-2 -left-[5px] w-0 h-0 border-l-[5px] border-r-[5px] border-t-[6px] border-transparent border-t-red-500"></div>
                                 </div>
 
-                                {/* Video Track */}
-                                <div className="flex gap-2">
-                                    <div className="w-20 text-xs text-slate-500 shrink-0 py-2">V1 Main</div>
-                                    <div className="flex-1 h-12 bg-slate-800 rounded-md border border-white/5 flex overflow-hidden">
-                                        {[1,2,3,4,5,6].map(i => (
+                                {/* Track Video */}
+                                <div className="flex gap-2 items-center">
+                                    <div className="w-16 text-[10px] uppercase font-bold text-slate-500 shrink-0 text-right pr-2">V1 Main</div>
+                                    <div className="flex-1 h-10 bg-slate-800 rounded border border-white/5 flex overflow-hidden relative group">
+                                        <div className="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition cursor-pointer"></div>
+                                        {[1,2,3,4,5,6,7].map(i => (
                                             <div key={i} className="h-full w-24 border-r border-slate-700/50 bg-slate-900 flex items-center justify-center">
-                                                <i className="fas fa-video text-slate-700 text-xs"></i>
+                                                <Icon name="video" className="w-4 h-4 text-slate-700" />
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Audio Track */}
-                                <div className="flex gap-2">
-                                    <div className="w-20 text-xs text-slate-500 shrink-0 py-2">A1 Audio</div>
-                                    <div className="flex-1 h-12 bg-slate-800/50 rounded-md border border-white/5 overflow-hidden flex items-center px-1">
-                                        {[...Array(100)].map((_, i) => {
-                                            if(i > 20 && i < 25) return <div key={i} className="w-[1%] h-0 mr-[1px]"></div>;
+                                {/* Track B-Roll */}
+                                <div className="flex gap-2 items-center">
+                                    <div className="w-16 text-[10px] uppercase font-bold text-slate-500 shrink-0 text-right pr-2">V2 B-Roll</div>
+                                    <div className="flex-1 h-7 rounded flex relative bg-slate-900/50 border border-white/5">
+                                        <div className="absolute left-[10%] w-[15%] h-full bg-blue-600/40 rounded border border-blue-500/50 text-[9px] font-medium text-blue-100 flex items-center px-2">Stock Clip</div>
+                                        <div className="absolute left-[60%] w-[10%] h-full bg-purple-600/40 rounded border border-purple-500/50 text-[9px] font-medium text-purple-100 flex items-center px-2">Zoom In</div>
+                                    </div>
+                                </div>
+
+                                {/* Track Audio Waveform */}
+                                <div className="flex gap-2 items-center pt-1">
+                                    <div className="w-16 text-[10px] uppercase font-bold text-slate-500 shrink-0 text-right pr-2">A1 Audio</div>
+                                    <div className="flex-1 h-10 bg-slate-800/50 rounded border border-white/5 overflow-hidden flex items-center px-1">
+                                        {[...Array(150)].map((_, i) => {
+                                            if(i > 30 && i < 35) return <div key={i} className="w-[1%] h-0 mr-[1px]"></div>; // Cut silence
+                                            if(i > 90 && i < 95) return <div key={i} className="w-[1%] h-0 mr-[1px]"></div>; // Cut silence
                                             const height = Math.random() * 80 + 20;
-                                            return <div key={i} className={`flex-1 mr-[1px] rounded-full ${i > 30 && i < 40 ? 'bg-orange-500' : 'bg-emerald-500/60'}`} style={{ height: `${height}%` }}></div>
+                                            return <div key={i} className={`flex-1 mr-[1px] rounded-full ${i > 40 && i < 60 ? 'bg-orange-500' : 'bg-emerald-500/60'}`} style={{ height: `${height}%` }}></div>
                                         })}
                                     </div>
                                 </div>
 
-                                {/* Subtitle Track */}
-                                <div className="flex gap-2 mt-4">
-                                    <div className="w-20 text-xs text-slate-500 shrink-0 py-1">S1 Captions</div>
-                                    <div className="flex-1 h-8 bg-slate-800/30 rounded-md border border-white/5 flex gap-1 p-1">
-                                        <div className="w-[15%] h-full bg-yellow-500/20 border border-yellow-500/50 text-[10px] text-yellow-200 flex items-center justify-center rounded">"THIS IS"</div>
-                                        <div className="w-[20%] h-full bg-yellow-500/20 border border-yellow-500/50 text-[10px] text-yellow-200 flex items-center justify-center rounded">"THE FUTURE"</div>
+                                {/* Track Subtitle */}
+                                <div className="flex gap-2 items-center">
+                                    <div className="w-16 text-[10px] uppercase font-bold text-slate-500 shrink-0 text-right pr-2">T1 Text</div>
+                                    <div className="flex-1 h-6 bg-slate-900/50 rounded border border-white/5 flex gap-1 p-0.5">
+                                        <div className="w-[12%] h-full bg-yellow-500/20 rounded border border-yellow-500/50 text-[9px] font-bold text-yellow-200 flex items-center justify-center truncate">"THIS IS"</div>
+                                        <div className="w-[18%] h-full bg-yellow-500/20 rounded border border-yellow-500/50 text-[9px] font-bold text-yellow-200 flex items-center justify-center truncate">"THE FUTURE"</div>
+                                        <div className="w-[10%] ml-[5%] h-full bg-yellow-500/20 rounded border border-yellow-500/50 text-[9px] font-bold text-yellow-200 flex items-center justify-center truncate">"OF VIDEO"</div>
                                     </div>
                                 </div>
                             </div>
@@ -389,9 +636,22 @@
                     </div>
                 </div>
             );
+
+            return (
+                <div className="h-screen w-screen flex bg-slate-950 text-white overflow-hidden">
+                    {/* Render Sidebar on specific views */}
+                    {['editor', 'projects', 'pricing'].includes(view) && <Sidebar />}
+                    
+                    {/* Render Main Content */}
+                    {view === 'landing' && <LandingPage />}
+                    {view === 'processing' && <ProcessingScreen />}
+                    {view === 'editor' && <EditorDashboard />}
+                    {view === 'projects' && <ProjectsPage />}
+                    {view === 'pricing' && <PricingPage />}
+                </div>
+            );
         }
 
-        // Render aplikasi ke dalam div#root
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
