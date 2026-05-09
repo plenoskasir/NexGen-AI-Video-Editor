@@ -40,7 +40,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // Komponen Icon
         const Icon = ({ name, className }) => {
@@ -49,23 +49,49 @@
         };
 
         function App() {
-            const [view, setView] = useState('landing'); // landing, processing, editor
+            const [view, setView] = useState('landing');
             const [urlInput, setUrlInput] = useState('');
             const [processingStep, setProcessingStep] = useState(0);
             const [isPlaying, setIsPlaying] = useState(false);
             const [currentTime, setCurrentTime] = useState(0);
+            const [videoDuration, setVideoDuration] = useState(10); // Default 10 detik
             const [isExporting, setIsExporting] = useState(false);
 
-            // Simulasi Timeline Berjalan
-            useEffect(() => {
-                let interval;
-                if (isPlaying) {
-                    interval = setInterval(() => {
-                        setCurrentTime((prev) => (prev >= 60 ? 0 : prev + 1));
-                    }, 100);
+            // Reference untuk mengontrol video asli
+            const videoRef = useRef(null);
+
+            // Fungsi untuk Play/Pause Video Asli
+            const togglePlay = () => {
+                if (videoRef.current) {
+                    if (isPlaying) {
+                        videoRef.current.pause();
+                    } else {
+                        videoRef.current.play();
+                    }
+                    setIsPlaying(!isPlaying);
                 }
-                return () => clearInterval(interval);
-            }, [isPlaying]);
+            };
+
+            // Update waktu saat video diputar
+            const handleTimeUpdate = () => {
+                if (videoRef.current) {
+                    setCurrentTime(videoRef.current.currentTime);
+                }
+            };
+
+            // Ambil total durasi saat video selesai dimuat
+            const handleLoadedMetadata = () => {
+                if (videoRef.current) {
+                    setVideoDuration(videoRef.current.duration);
+                }
+            };
+
+            // Format angka ke menit:detik
+            const formatTime = (timeInSeconds) => {
+                const minutes = Math.floor(timeInSeconds / 60);
+                const seconds = Math.floor(timeInSeconds % 60);
+                return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            };
 
             // Simulasi Proses Loading AI
             const handleStartProcessing = (e) => {
@@ -89,9 +115,10 @@
                 setIsExporting(true);
                 setTimeout(() => {
                     setIsExporting(false);
-                    alert("Video berhasil di-export dan disimpan ke komputer Anda!");
+                    alert("Video berhasil di-export!");
                     setView('landing');
                     setUrlInput('');
+                    setIsPlaying(false);
                 }, 3000);
             };
 
@@ -162,21 +189,43 @@
                         
                         {/* Kiri: Video Preview */}
                         <div className="flex-1 p-6 flex flex-col">
-                            <div className="flex-1 bg-black rounded-xl border border-white/10 relative flex items-center justify-center shadow-2xl overflow-hidden">
-                                <div className="absolute text-center px-8">
-                                    <h2 className="text-3xl md:text-4xl font-black uppercase text-yellow-400 drop-shadow-lg">
-                                        INI ADALAH <br/><span className="text-white">CONTOH SUBTITLE</span>
+                            <div className="flex-1 bg-black rounded-xl border border-white/10 relative flex items-center justify-center shadow-2xl overflow-hidden group">
+                                
+                                {/* VIDEO ASLI DARI INTERNET */}
+                                <video 
+                                    ref={videoRef}
+                                    src="https://www.w3schools.com/html/mov_bbb.mp4" 
+                                    className="w-full h-full object-contain"
+                                    onTimeUpdate={handleTimeUpdate}
+                                    onLoadedMetadata={handleLoadedMetadata}
+                                    onEnded={() => setIsPlaying(false)}
+                                />
+
+                                {/* Subtitle Simulasi */}
+                                <div className="absolute top-3/4 text-center px-8 pointer-events-none">
+                                    <h2 className="text-2xl md:text-3xl font-black uppercase text-yellow-400 drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px black' }}>
+                                        INI ADALAH <span className="text-white">SUBTITLE AI</span>
                                     </h2>
                                 </div>
-                                {/* Tombol Play */}
-                                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-4 glass-panel px-6 py-3 rounded-full border border-white/10 w-2/3 max-w-sm">
-                                    <button onClick={() => setIsPlaying(!isPlaying)} className="hover:text-purple-400 transition">
+
+                                {/* Tombol Play di Tengah (muncul saat pause) */}
+                                {!isPlaying && (
+                                    <button onClick={togglePlay} className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/50 transition">
+                                        <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/50 hover:scale-110 transition-transform">
+                                            <Icon name="play" className="w-8 h-8 text-white ml-1"/>
+                                        </div>
+                                    </button>
+                                )}
+
+                                {/* Kontrol Play & Timeline (Bawah) */}
+                                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-4 glass-panel px-6 py-3 rounded-full border border-white/10 w-11/12 max-w-md">
+                                    <button onClick={togglePlay} className="hover:text-purple-400 transition">
                                         <Icon name={isPlaying ? "pause" : "play"} className="w-6 h-6"/>
                                     </button>
-                                    <div className="flex-1 h-2 bg-slate-700 rounded-full">
-                                        <div className="h-full bg-purple-500 rounded-full transition-all" style={{ width: `${(currentTime/60)*100}%` }}></div>
+                                    <div className="flex-1 h-2 bg-slate-700 rounded-full relative overflow-hidden">
+                                        <div className="absolute top-0 left-0 h-full bg-purple-500 rounded-full transition-all duration-75" style={{ width: `${(currentTime/videoDuration)*100}%` }}></div>
                                     </div>
-                                    <span className="text-xs font-mono">00:{(currentTime/10).toFixed(1).replace('.','')}</span>
+                                    <span className="text-xs font-mono">{formatTime(currentTime)}</span>
                                 </div>
                             </div>
                         </div>
@@ -220,18 +269,27 @@
                     </div>
 
                     {/* Bawah: Simple Timeline */}
-                    <div className="h-40 border-t border-white/10 glass-panel p-4 flex flex-col gap-2 shrink-0">
-                        <div className="text-xs font-bold text-slate-500 mb-1">TIMELINE</div>
+                    <div className="h-40 border-t border-white/10 glass-panel p-4 flex flex-col gap-2 shrink-0 relative">
+                        <div className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
+                            <span>TIMELINE (Video Asli)</span>
+                            <span className="font-mono text-purple-400">{formatTime(currentTime)} / {formatTime(videoDuration)}</span>
+                        </div>
+                        
+                        {/* Garis Merah Penanda Waktu (Playhead) */}
+                        <div className="absolute top-8 bottom-4 w-px bg-red-500 z-50 pointer-events-none" style={{ left: `calc(1rem + ${(currentTime/videoDuration)*95}%)` }}>
+                            <div className="absolute -top-1 -left-[3px] w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                        </div>
+
                         {/* Track Video */}
-                        <div className="h-10 w-full bg-slate-800 rounded border border-white/10 flex items-center px-2">
-                            <div className="h-full w-full bg-blue-500/20 border-x border-blue-500 flex items-center justify-center text-xs text-blue-300">
-                                <Icon name="video" className="w-4 h-4 mr-2" /> Klip Utama
+                        <div className="h-10 w-full bg-slate-800 rounded border border-white/10 flex items-center px-2 overflow-hidden">
+                            <div className="h-full w-full bg-blue-500/20 border-x border-blue-500 flex items-center justify-center text-xs text-blue-300 truncate">
+                                <Icon name="video" className="w-4 h-4 mr-2 shrink-0" /> Track Utama (mov_bbb.mp4)
                             </div>
                         </div>
                         {/* Track Text */}
                         <div className="h-8 w-full bg-slate-900 rounded border border-white/10 flex items-center gap-1 p-1">
                             <div className="h-full w-1/4 bg-yellow-500/20 rounded text-[10px] flex items-center justify-center text-yellow-200">"INI ADALAH"</div>
-                            <div className="h-full w-1/4 bg-yellow-500/20 rounded text-[10px] flex items-center justify-center text-yellow-200">"CONTOH SUBTITLE"</div>
+                            <div className="h-full w-1/4 bg-yellow-500/20 rounded text-[10px] flex items-center justify-center text-yellow-200">"SUBTITLE AI"</div>
                         </div>
                     </div>
                 </div>
