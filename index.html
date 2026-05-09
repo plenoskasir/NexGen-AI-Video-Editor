@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexGen AI - Simple Editor</title>
+    <title>NexGen AI - Premium Editor</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -29,11 +29,18 @@
             overflow-x: hidden;
         }
 
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
         .glass-panel {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
+        
+        .glow-purple { box-shadow: 0 0 20px rgba(168,85,247,0.4); }
     </style>
 </head>
 <body>
@@ -54,13 +61,13 @@
             const [processingStep, setProcessingStep] = useState(0);
             const [isPlaying, setIsPlaying] = useState(false);
             const [currentTime, setCurrentTime] = useState(0);
-            const [videoDuration, setVideoDuration] = useState(10); // Default 10 detik
+            const [videoDuration, setVideoDuration] = useState(10);
             const [isExporting, setIsExporting] = useState(false);
+            const [activeTab, setActiveTab] = useState('subtitles'); // Tabs: subtitles, analysis
 
-            // Reference untuk mengontrol video asli
             const videoRef = useRef(null);
 
-            // Fungsi untuk Play/Pause Video Asli
+            // Play/Pause Control
             const togglePlay = () => {
                 if (videoRef.current) {
                     if (isPlaying) {
@@ -72,80 +79,70 @@
                 }
             };
 
-            // Update waktu saat video diputar
-            const handleTimeUpdate = () => {
-                if (videoRef.current) {
-                    setCurrentTime(videoRef.current.currentTime);
-                }
-            };
+            const handleTimeUpdate = () => { if (videoRef.current) setCurrentTime(videoRef.current.currentTime); };
+            const handleLoadedMetadata = () => { if (videoRef.current) setVideoDuration(videoRef.current.duration); };
 
-            // Ambil total durasi saat video selesai dimuat
-            const handleLoadedMetadata = () => {
-                if (videoRef.current) {
-                    setVideoDuration(videoRef.current.duration);
-                }
-            };
-
-            // Format angka ke menit:detik
             const formatTime = (timeInSeconds) => {
                 const minutes = Math.floor(timeInSeconds / 60);
                 const seconds = Math.floor(timeInSeconds % 60);
                 return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
             };
 
-            // Simulasi Proses Loading AI
             const handleStartProcessing = (e) => {
                 e.preventDefault();
                 if (!urlInput) return;
                 setView('processing');
-                
                 let step = 0;
                 const interval = setInterval(() => {
                     step++;
                     setProcessingStep(step);
-                    if (step > 3) {
+                    if (step > 4) {
                         clearInterval(interval);
-                        setTimeout(() => setView('editor'), 500);
+                        setTimeout(() => setView('editor'), 800);
                     }
                 }, 1000);
             };
 
-            // Simulasi Export
             const handleExport = () => {
                 setIsExporting(true);
                 setTimeout(() => {
                     setIsExporting(false);
-                    alert("Video berhasil di-export!");
-                    setView('landing');
-                    setUrlInput('');
-                    setIsPlaying(false);
-                }, 3000);
+                    alert("Video MP4 Premium berhasil di-export ke perangkat Anda!");
+                }, 3500);
             };
 
-            // --- HALAMAN 1: LANDING PAGE ---
+            // --- 1. LANDING PAGE ---
             if (view === 'landing') {
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-slate-950 to-[#0a0514] flex flex-col items-center justify-center p-6 text-center">
-                        <div className="max-w-2xl w-full space-y-6">
-                            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white">
-                                NexGen <span className="text-purple-500">AI</span>
-                            </h1>
-                            <p className="text-slate-400 text-lg">Buat Video Shorts Viral Secara Otomatis.</p>
+                    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-[#0a0514] to-slate-950 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+                        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-[120px] pointer-events-none"></div>
+                        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] pointer-events-none"></div>
 
-                            <form onSubmit={handleStartProcessing} className="mt-8 flex flex-col md:flex-row gap-4">
-                                <div className="flex-1 flex items-center glass-panel rounded-xl p-2 px-4">
+                        <div className="z-10 max-w-2xl w-full space-y-6">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-2 backdrop-blur-md">
+                                <Icon name="zap" className="w-4 h-4 text-purple-400" />
+                                <span className="text-sm text-slate-300 tracking-wider font-semibold">NEXGEN AI CORE ONLINE</span>
+                            </div>
+                            <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                                Auto <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-500">Viral Shorts.</span>
+                            </h1>
+                            <p className="text-slate-400 text-lg">Paste link YouTube/TikTok, biarkan AI kami memotong, menambahkan subtitle, dan efek B-Roll secara otomatis.</p>
+
+                            <form onSubmit={handleStartProcessing} className="mt-8 flex flex-col md:flex-row gap-4 relative group">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                                <div className="relative flex-1 flex items-center glass-panel rounded-xl p-2 px-4">
                                     <Icon name="link" className="w-5 h-5 text-slate-400 mr-3" />
                                     <input 
                                         type="text" 
-                                        placeholder="Paste Link YouTube atau TikTok di sini..."
-                                        className="bg-transparent border-none text-white focus:outline-none w-full py-2"
+                                        placeholder="Paste Link Video di sini..."
+                                        className="bg-transparent border-none text-white focus:outline-none w-full py-3"
                                         value={urlInput}
                                         onChange={(e) => setUrlInput(e.target.value)}
                                         required
                                     />
                                 </div>
-                                <button type="submit" className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition flex items-center justify-center gap-2">
-                                    Generate <Icon name="wand-2" className="w-5 h-5" />
+                                <button type="submit" className="relative px-8 py-4 bg-white hover:bg-slate-200 text-black font-bold rounded-xl transition flex items-center justify-center gap-2 glow-purple">
+                                    Generate AI <Icon name="wand-2" className="w-5 h-5" />
                                 </button>
                             </form>
                         </div>
@@ -153,45 +150,74 @@
                 );
             }
 
-            // --- HALAMAN 2: LOADING ---
+            // --- 2. LOADING SCREEN ---
             if (view === 'processing') {
                 return (
-                    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
-                        <div className="glass-panel p-10 rounded-2xl text-center max-w-sm w-full">
-                            <Icon name="loader-2" className="w-12 h-12 text-purple-500 animate-spin mx-auto mb-6" />
-                            <h2 className="text-xl font-bold mb-4">AI Sedang Bekerja...</h2>
-                            <div className="text-sm text-slate-400 space-y-2 text-left">
-                                <div className={`flex items-center gap-2 ${processingStep >= 1 ? 'text-white' : 'opacity-50'}`}><Icon name="check-circle-2" className="w-4 h-4 text-green-500"/> Download Video</div>
-                                <div className={`flex items-center gap-2 ${processingStep >= 2 ? 'text-white' : 'opacity-50'}`}><Icon name="check-circle-2" className="w-4 h-4 text-green-500"/> Mencari Momen Viral</div>
-                                <div className={`flex items-center gap-2 ${processingStep >= 3 ? 'text-white' : 'opacity-50'}`}><Icon name="check-circle-2" className="w-4 h-4 text-green-500"/> Membuat Subtitle</div>
+                    <div className="min-h-screen bg-gradient-to-br from-slate-950 to-[#0a0514] flex flex-col items-center justify-center text-white">
+                        <div className="glass-panel p-10 rounded-3xl text-center max-w-sm w-full glow-purple">
+                            <div className="inline-block p-4 bg-purple-500/10 rounded-full mb-6">
+                                <Icon name="cpu" className="w-10 h-10 text-purple-400 animate-pulse" />
+                            </div>
+                            <h2 className="text-2xl font-bold mb-6">AI Sedang Bekerja</h2>
+                            <div className="text-sm text-slate-400 space-y-4 text-left font-medium">
+                                <div className={`flex items-center gap-3 ${processingStep >= 1 ? 'text-white' : 'opacity-40'}`}>
+                                    <div className={`p-1.5 rounded-full ${processingStep > 1 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800'}`}><Icon name="cloud" className="w-4 h-4"/></div> 
+                                    Mengunduh Video
+                                </div>
+                                <div className={`flex items-center gap-3 ${processingStep >= 2 ? 'text-white' : 'opacity-40'}`}>
+                                    <div className={`p-1.5 rounded-full ${processingStep > 2 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800'}`}><Icon name="flame" className="w-4 h-4"/></div> 
+                                    Menganalisis Momen Viral
+                                </div>
+                                <div className={`flex items-center gap-3 ${processingStep >= 3 ? 'text-white' : 'opacity-40'}`}>
+                                    <div className={`p-1.5 rounded-full ${processingStep > 3 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800'}`}><Icon name="scissors" className="w-4 h-4"/></div> 
+                                    Memotong Jeda Kosong
+                                </div>
+                                <div className={`flex items-center gap-3 ${processingStep >= 4 ? 'text-white' : 'opacity-40'}`}>
+                                    <div className={`p-1.5 rounded-full ${processingStep > 4 ? 'bg-green-500/20 text-green-400' : 'bg-slate-800'}`}><Icon name="type" className="w-4 h-4"/></div> 
+                                    Menerapkan Subtitle Animasi
+                                </div>
                             </div>
                         </div>
                     </div>
                 );
             }
 
-            // --- HALAMAN 3: EDITOR ---
+            // --- 3. MAIN EDITOR ---
             return (
-                <div className="h-screen flex flex-col bg-slate-950 text-white">
-                    {/* Header */}
-                    <header className="h-16 glass-panel border-b border-white/10 flex items-center justify-between px-6 shrink-0">
-                        <div className="font-bold text-lg flex items-center gap-2">
-                            <Icon name="video" className="w-5 h-5 text-purple-500" /> NexGen Simple
+                <div className="h-screen flex flex-col bg-slate-950 text-white overflow-hidden">
+                    
+                    {/* Render Modal */}
+                    {isExporting && (
+                        <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center">
+                            <div className="glass-panel rounded-3xl p-10 text-center glow-purple border border-purple-500/50">
+                                <Icon name="loader-2" className="w-12 h-12 text-purple-500 animate-spin mx-auto mb-4" />
+                                <h3 className="text-2xl font-bold text-white">Rendering Video...</h3>
+                                <p className="text-slate-400 mt-2">Menerapkan transisi dan menyimpan file MP4.</p>
+                            </div>
                         </div>
-                        <button onClick={handleExport} disabled={isExporting} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold text-sm transition flex items-center gap-2">
-                            {isExporting ? <Icon name="loader-2" className="w-4 h-4 animate-spin"/> : <Icon name="download" className="w-4 h-4"/>}
-                            {isExporting ? 'Mengekspor...' : 'Export Video'}
-                        </button>
+                    )}
+
+                    {/* Header */}
+                    <header className="h-16 glass-panel border-b border-white/10 flex items-center justify-between px-6 shrink-0 z-20">
+                        <div className="font-bold text-xl flex items-center gap-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">
+                            <Icon name="layout" className="w-6 h-6 text-purple-500" /> NexGen AI
+                        </div>
+                        <div className="flex gap-4 items-center">
+                            <span className="text-xs text-slate-400 font-mono hidden md:inline"><Icon name="cloud-snow" className="w-3 h-3 inline mr-1"/>Auto-Saved</span>
+                            <button onClick={handleExport} className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 rounded-lg font-bold text-sm transition flex items-center gap-2 shadow-lg shadow-purple-500/20">
+                                <Icon name="download" className="w-4 h-4"/> Export MP4
+                            </button>
+                        </div>
                     </header>
 
-                    {/* Main Area */}
-                    <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                         
                         {/* Kiri: Video Preview */}
-                        <div className="flex-1 p-6 flex flex-col">
-                            <div className="flex-1 bg-black rounded-xl border border-white/10 relative flex items-center justify-center shadow-2xl overflow-hidden group">
+                        <div className="flex-1 p-4 md:p-6 flex flex-col">
+                            <div className="flex-1 bg-black rounded-2xl border border-white/10 relative flex items-center justify-center shadow-2xl overflow-hidden group">
                                 
-                                {/* VIDEO ASLI DARI INTERNET */}
+                                {/* Video Asli */}
                                 <video 
                                     ref={videoRef}
                                     src="https://www.w3schools.com/html/mov_bbb.mp4" 
@@ -202,94 +228,143 @@
                                 />
 
                                 {/* Subtitle Simulasi */}
-                                <div className="absolute top-3/4 text-center px-8 pointer-events-none">
-                                    <h2 className="text-2xl md:text-3xl font-black uppercase text-yellow-400 drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px black' }}>
-                                        INI ADALAH <span className="text-white">SUBTITLE AI</span>
+                                <div className="absolute top-[75%] text-center px-4 w-full pointer-events-none">
+                                    <h2 className="text-2xl md:text-4xl font-black uppercase text-yellow-400 drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]" style={{ WebkitTextStroke: '1px black' }}>
+                                        INI ADALAH <span className="bg-white/20 px-2 rounded backdrop-blur-sm text-white">SUBTITLE AI</span>
                                     </h2>
                                 </div>
 
-                                {/* Tombol Play di Tengah (muncul saat pause) */}
+                                {/* Label AI */}
+                                <div className="absolute top-4 left-4 bg-purple-500/20 text-purple-400 px-3 py-1 rounded border border-purple-500/50 text-xs font-bold flex items-center gap-2 backdrop-blur-sm">
+                                    <Icon name="wand-2" className="w-3 h-3" /> AI Enhanced
+                                </div>
+
+                                {/* Tombol Play Tengah */}
                                 {!isPlaying && (
-                                    <button onClick={togglePlay} className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/50 transition">
+                                    <button onClick={togglePlay} className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/50 transition">
                                         <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/50 hover:scale-110 transition-transform">
                                             <Icon name="play" className="w-8 h-8 text-white ml-1"/>
                                         </div>
                                     </button>
                                 )}
 
-                                {/* Kontrol Play & Timeline (Bawah) */}
+                                {/* Kontrol Bawah */}
                                 <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-4 glass-panel px-6 py-3 rounded-full border border-white/10 w-11/12 max-w-md">
-                                    <button onClick={togglePlay} className="hover:text-purple-400 transition">
+                                    <button onClick={togglePlay} className="hover:text-purple-400 transition text-white">
                                         <Icon name={isPlaying ? "pause" : "play"} className="w-6 h-6"/>
                                     </button>
-                                    <div className="flex-1 h-2 bg-slate-700 rounded-full relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 h-full bg-purple-500 rounded-full transition-all duration-75" style={{ width: `${(currentTime/videoDuration)*100}%` }}></div>
+                                    <div className="flex-1 h-1.5 bg-slate-700 rounded-full relative overflow-hidden cursor-pointer">
+                                        <div className="absolute top-0 left-0 h-full bg-purple-500 rounded-full transition-all duration-75 shadow-[0_0_10px_#a855f7]" style={{ width: `${(currentTime/videoDuration)*100}%` }}></div>
                                     </div>
-                                    <span className="text-xs font-mono">{formatTime(currentTime)}</span>
+                                    <span className="text-xs font-mono text-slate-300">{formatTime(currentTime)}</span>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Kanan: Simple Settings */}
-                        <div className="w-full md:w-80 border-l border-white/10 glass-panel p-6 flex flex-col gap-6 overflow-y-auto">
-                            <div>
-                                <h3 className="font-bold mb-3 text-sm text-slate-300">Style Subtitle</h3>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <button className="py-2 bg-purple-600 rounded text-sm font-medium">MrBeast</button>
-                                    <button className="py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm">Hormozi</button>
-                                    <button className="py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm">Minimal</button>
-                                    <button className="py-2 bg-slate-800 hover:bg-slate-700 rounded text-sm">Gaming</button>
-                                </div>
+                        {/* Kanan: Settings Panel */}
+                        <div className="w-full lg:w-80 border-l border-white/10 glass-panel flex flex-col z-10 shrink-0">
+                            <div className="flex border-b border-white/10">
+                                <button onClick={() => setActiveTab('subtitles')} className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition ${activeTab === 'subtitles' ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-slate-400 hover:text-white'}`}>Pengaturan</button>
+                                <button onClick={() => setActiveTab('analysis')} className={`flex-1 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition ${activeTab === 'analysis' ? 'border-purple-500 text-purple-400 bg-purple-500/5' : 'border-transparent text-slate-400 hover:text-white'}`}>AI Analisis</button>
                             </div>
 
-                            <div className="space-y-4 pt-4 border-t border-white/10">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span>Auto Emoji</span>
-                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
-                                </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span>B-Roll Otomatis</span>
-                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
-                                </div>
-                                <div className="flex justify-between items-center text-sm">
-                                    <span>Hapus Jeda Diam</span>
-                                    <input type="checkbox" defaultChecked className="w-4 h-4 accent-purple-500" />
-                                </div>
-                            </div>
+                            <div className="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-6">
+                                {activeTab === 'subtitles' && (
+                                    <>
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-300 mb-3">Style Subtitle (Template)</h3>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button className="py-2 bg-purple-600/20 border border-purple-500 text-white rounded-lg text-sm font-medium shadow-[0_0_10px_rgba(168,85,247,0.2)]">MrBeast</button>
+                                                <button className="py-2 bg-slate-800/50 border border-white/5 hover:bg-slate-800 text-slate-300 rounded-lg text-sm transition">Hormozi</button>
+                                                <button className="py-2 bg-slate-800/50 border border-white/5 hover:bg-slate-800 text-slate-300 rounded-lg text-sm transition">Cinematic</button>
+                                                <button className="py-2 bg-slate-800/50 border border-white/5 hover:bg-slate-800 text-slate-300 rounded-lg text-sm transition">Gaming</button>
+                                            </div>
+                                        </div>
 
-                            <div className="pt-4 border-t border-white/10 mt-auto">
-                                <h3 className="font-bold mb-3 text-sm text-slate-300">Durasi Video</h3>
-                                <select className="w-full bg-slate-800 border border-white/10 rounded p-2 text-sm focus:outline-none focus:border-purple-500">
-                                    <option>Otomatis (Rekomendasi AI)</option>
-                                    <option>Maks 30 Detik</option>
-                                    <option>Maks 60 Detik</option>
-                                </select>
+                                        <div className="space-y-4 pt-4 border-t border-white/10">
+                                            {['Auto Emoji Animasi', 'Highlight Kata Penting', 'Auto B-Roll Insert', 'Hapus Jeda Diam'].map((setting, i) => (
+                                                <div key={setting} className="flex justify-between items-center text-sm font-medium text-slate-300">
+                                                    <span>{setting}</span>
+                                                    <div className="w-10 h-5 bg-purple-600 rounded-full relative cursor-pointer">
+                                                        <div className="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        <div className="pt-4 border-t border-white/10 mt-auto">
+                                            <h3 className="text-sm font-bold text-slate-300 mb-3">Target Durasi AI</h3>
+                                            <select className="w-full bg-slate-900 border border-white/10 rounded-lg p-2.5 text-sm text-slate-200 focus:outline-none focus:border-purple-500">
+                                                <option>Otomatis (Berdasarkan Retensi AI)</option>
+                                                <option>Maksimal 30 Detik (Shorts)</option>
+                                                <option>Maksimal 60 Detik (Reels)</option>
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+
+                                {activeTab === 'analysis' && (
+                                    <>
+                                        <div className="p-5 rounded-xl bg-gradient-to-br from-purple-900/30 to-slate-900 border border-purple-500/30 glow-purple">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="font-bold flex items-center gap-2 text-sm"><Icon name="flame" className="w-4 h-4 text-orange-500"/> Potensi Viral</h3>
+                                                <span className="text-2xl font-black text-white">96<span className="text-sm text-slate-400 font-medium">%</span></span>
+                                            </div>
+                                            <div className="space-y-3 text-xs font-medium text-slate-300">
+                                                <div className="flex justify-between items-center">
+                                                    <span>Kekuatan Hook</span>
+                                                    <div className="w-32 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-green-500 w-[98%] shadow-[0_0_8px_#22c55e]"></div></div>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span>Prediksi Retensi</span>
+                                                    <div className="w-32 h-1.5 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-blue-500 w-[85%] shadow-[0_0_8px_#3b82f6]"></div></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-slate-400 leading-relaxed bg-slate-900/50 p-3 rounded-lg border border-white/5">
+                                            Video ini memiliki hook yang sangat kuat di 3 detik pertama. AI menyarankan format vertikal 9:16 untuk performa TikTok maksimal.
+                                        </p>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
 
-                    {/* Bawah: Simple Timeline */}
-                    <div className="h-40 border-t border-white/10 glass-panel p-4 flex flex-col gap-2 shrink-0 relative">
-                        <div className="text-xs font-bold text-slate-500 mb-1 flex justify-between">
-                            <span>TIMELINE (Video Asli)</span>
-                            <span className="font-mono text-purple-400">{formatTime(currentTime)} / {formatTime(videoDuration)}</span>
+                    {/* Bawah: Timeline */}
+                    <div className="h-44 border-t border-white/10 glass-panel flex flex-col z-20 shrink-0">
+                        <div className="h-8 border-b border-white/5 flex items-center px-4 justify-between bg-slate-900/50">
+                            <span className="text-[10px] font-bold text-slate-500 tracking-wider">AI TIMELINE EDITOR</span>
+                            <span className="font-mono text-xs text-purple-400">{formatTime(currentTime)} / {formatTime(videoDuration)}</span>
                         </div>
                         
-                        {/* Garis Merah Penanda Waktu (Playhead) */}
-                        <div className="absolute top-8 bottom-4 w-px bg-red-500 z-50 pointer-events-none" style={{ left: `calc(1rem + ${(currentTime/videoDuration)*95}%)` }}>
-                            <div className="absolute -top-1 -left-[3px] w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                        </div>
-
-                        {/* Track Video */}
-                        <div className="h-10 w-full bg-slate-800 rounded border border-white/10 flex items-center px-2 overflow-hidden">
-                            <div className="h-full w-full bg-blue-500/20 border-x border-blue-500 flex items-center justify-center text-xs text-blue-300 truncate">
-                                <Icon name="video" className="w-4 h-4 mr-2 shrink-0" /> Track Utama (mov_bbb.mp4)
+                        <div className="flex-1 relative p-4 overflow-hidden">
+                            {/* Garis Merah Penanda Waktu */}
+                            <div className="absolute top-0 bottom-4 w-px bg-red-500 z-50 pointer-events-none" style={{ left: `calc(1rem + ${(currentTime/videoDuration)*95}%)` }}>
+                                <div className="absolute -top-1 -left-[3px] w-1.5 h-1.5 bg-red-500 rounded-full"></div>
                             </div>
-                        </div>
-                        {/* Track Text */}
-                        <div className="h-8 w-full bg-slate-900 rounded border border-white/10 flex items-center gap-1 p-1">
-                            <div className="h-full w-1/4 bg-yellow-500/20 rounded text-[10px] flex items-center justify-center text-yellow-200">"INI ADALAH"</div>
-                            <div className="h-full w-1/4 bg-yellow-500/20 rounded text-[10px] flex items-center justify-center text-yellow-200">"SUBTITLE AI"</div>
+
+                            <div className="space-y-2">
+                                {/* Track Video */}
+                                <div className="flex gap-2 items-center">
+                                    <div className="w-14 text-[10px] font-bold text-slate-500 text-right pr-2">VIDEO</div>
+                                    <div className="flex-1 h-10 bg-slate-800 rounded-md border border-white/10 flex items-center px-1 overflow-hidden">
+                                        <div className="h-[80%] w-full bg-blue-500/20 border border-blue-500/50 rounded-sm flex items-center justify-center text-xs text-blue-300 font-medium tracking-wide relative">
+                                            <Icon name="video" className="w-3 h-3 mr-2 shrink-0" /> mov_bbb.mp4 (Auto-Framed)
+                                            <div className="absolute right-2 text-[9px] bg-blue-500/30 px-1 rounded">10.0s</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                {/* Track Subtitle */}
+                                <div className="flex gap-2 items-center">
+                                    <div className="w-14 text-[10px] font-bold text-slate-500 text-right pr-2">TEXT</div>
+                                    <div className="flex-1 h-8 bg-slate-900/50 rounded-md border border-white/5 flex gap-1 p-1">
+                                        <div className="h-full w-[25%] bg-yellow-500/20 border border-yellow-500/40 rounded-sm text-[10px] flex items-center justify-center text-yellow-200 font-bold uppercase truncate px-1">"INI ADALAH"</div>
+                                        <div className="h-full w-[35%] bg-yellow-500/20 border border-yellow-500/40 rounded-sm text-[10px] flex items-center justify-center text-yellow-200 font-bold uppercase truncate px-1">"SUBTITLE AI"</div>
+                                        <div className="h-full w-[15%] bg-yellow-500/20 border border-yellow-500/40 rounded-sm text-[10px] flex items-center justify-center text-yellow-200 font-bold uppercase truncate px-1 ml-4">"KEREN!"</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
